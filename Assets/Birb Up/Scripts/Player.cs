@@ -11,6 +11,9 @@ public class Player : MovingObject {
 	public int pointsPerSoda = 20;
 	public float restartLevelDelay = 1f;
 	public Text foodText;
+    public Text ammoText;
+    public Text pistolText;
+    public Text shotgunText;
 	public AudioClip moveSound1;
 	public AudioClip moveSound2;
 	public AudioClip eatSound1;
@@ -20,18 +23,35 @@ public class Player : MovingObject {
 	public AudioClip gameOverSound;
 
 	private Animator animator;
-	private int food;
+	public int food;
 	private Vector2 touchOrigin = -Vector2.one;
+    private int ammunition;
+    private int pistolUses;
+    private int shotgunUses;
+
+    private KeyCode pistol = KeyCode.Alpha1;
+    private KeyCode shotgun = KeyCode.Alpha2;
+    private int facing = 1;
+    private SpriteRenderer sr;
+    private int blockLayer;
 
 	// Use this for initialization
 	protected override void Start () {
 		animator = GetComponent<Animator>();
-
+        sr = GetComponent<SpriteRenderer>();
 		food = GameManager.instance.playerFoodPoints;
+        ammunition = GameManager.instance.playerAmmo;
+        pistolUses = GameManager.instance.playerPistol;
+        shotgunUses = GameManager.instance.playerShotgun;
+
+        blockLayer = (1 << 8);
 
 		foodText.text = "Food: " + food;
+        ammoText.text = "Bullets: " + ammunition;
+        pistolText.text = "[1]\nPistol: " + pistolUses;
+        shotgunText.text = "[2]\nShotgun: " + shotgunUses;
 
-		base.Start();
+        base.Start();
 	}
 
 
@@ -42,6 +62,7 @@ public class Player : MovingObject {
 
 	// Update is called once per frame
 	void Update () {
+        Debug.Log(GameManager.instance.playersTurn);
 		//checks if itś the player's turn
 		if (!GameManager.instance.playersTurn) return;
 		// controls the movement for the player
@@ -87,20 +108,39 @@ public class Player : MovingObject {
 			if ( horizontal != 0 || vertical != 0) {
 				AttemptMove<Wall> (horizontal, vertical);
 			}
-		}
+
+            ShootEnemy();
+        }
+
+        
 	}
 
 	// runs when a player moves, consumes food and moves them in the direction
 	protected override void AttemptMove <T> (int xDir, int yDir) {
 		food--;
 		foodText.text = "Food: " + food;
+        ammoText.text = "Bullets: " + ammunition;
+        pistolText.text = "[1]\nPistol: " + pistolUses;
+        shotgunText.text = "[2]\nShotgun: " + shotgunUses;
 
-		base.AttemptMove <T> (xDir, yDir);
+        base.AttemptMove <T> (xDir, yDir);
 
 		RaycastHit2D hit;
 		if (Move(xDir, yDir, out hit)) {
 			SoundManager.instance.RandomizeSfx(moveSound1, moveSound2);
 		}
+
+        if ( (xDir < 0) && (facing == 1) )
+        {
+            sr.flipX = true;
+            facing = -1;
+        }
+
+        if ( (xDir > 0) && (facing == -1) )
+        {
+            sr.flipX = false;
+            facing = 1;
+        }
 
 		CheckIfGameOver();
 
@@ -128,6 +168,7 @@ public class Player : MovingObject {
 			enabled = false;
 		}
 
+        // when creating inventory change this so that the icon displays in the inventory bar with amount of food (use only fruit icon to represent both)
 		if (other.tag == "Food") { // gives the player extra food points on picking up food
 			food += pointsPerFood;
 			foodText.text = "+" + pointsPerFood + " Food: " + food;
@@ -140,7 +181,88 @@ public class Player : MovingObject {
 			SoundManager.instance.RandomizeSfx(drinkSound1, drinkSound2);
 			other.gameObject.SetActive(false);
 		}
+
+        if (other.tag == "Ammo")
+        {
+            // when creating inventory, change this so that the icon displays in the inventory bar with the amount
+            ammunition += 3;
+            ammoText.text = "+3 Bullets: " + ammunition;
+            //SoundManager.instance.RandomizeSfx(ammoSound1, ammoSound2);
+            other.gameObject.SetActive(false);
+        }
+
+        if ( (other.tag == "Weapon") && (other.name.Contains("Pistol")) ) 
+        {
+            
+            pistolUses += 5;
+            pistolText.text = "[1]\n+5 Pistol: " + pistolUses;
+            other.gameObject.SetActive(false);
+        }
+
+        if ( (other.tag == "Weapon") && (other.name.Contains("Shotgun")) )
+        {
+            shotgunUses += 5;
+            shotgunText.text = "[2]\n+5 Shotgun: " + shotgunUses;
+            other.gameObject.SetActive(false);
+        }
 	}
+
+    private void ShootEnemy()
+    {
+        if ( (Input.GetKeyDown(pistol)) && (ammunition > 0) && (pistolUses > 0))
+        {
+            animator.SetTrigger("playerShoot1");
+            ammunition--;
+            pistolUses--;
+            ammoText.text = "Bullets: " + ammunition;
+            pistolText.text = "[1]\nPistol: " + pistolUses;
+
+            RaycastHit2D hit = Physics2D.Raycast(gameObject.transform.position, Vector2.right * facing, Mathf.Infinity , blockLayer);
+            if ( hit.collider != null )
+            {
+                Debug.Log(hit.transform.name);
+                if (hit.transform.tag == "Enemy")
+                {
+                    Debug.Log("hit!");
+                    hit.transform.GetComponent<Enemy>().hp--;
+                    if (hit.transform.GetComponent<Enemy>().hp <= 0 )
+                    {
+                        hit.transform.GetComponent<Enemy>().quickRemove();
+                        hit.transform.gameObject.SetActive(false);
+                    }
+
+                }
+            }
+            GameManager.instance.playersTurn = false;
+        }
+
+        if ((Input.GetKeyDown(shotgun)) && (ammunition > 1) && (shotgunUses > 0))
+        {
+            animator.SetTrigger("playerShoot2");
+            ammunition -= 2;
+            shotgunUses--;
+            ammoText.text = "Bullets: " + ammunition;
+            shotgunText.text = "[2]\nShotgun: " + shotgunUses;
+
+            RaycastHit2D hit = Physics2D.Raycast(gameObject.transform.position, Vector2.right * facing, Mathf.Infinity, blockLayer);
+            if (hit.collider != null)
+            {
+                Debug.Log(hit.transform.name);
+                if (hit.transform.tag == "Enemy")
+                {
+                    Debug.Log("hit!");
+                    hit.transform.GetComponent<Enemy>().hp -= 2;
+                    if (hit.transform.GetComponent<Enemy>().hp <= 0)
+                    {
+                        hit.transform.GetComponent<Enemy>().quickRemove();
+                        hit.transform.gameObject.SetActive(false);
+                    }
+
+                }
+            }
+            GameManager.instance.playersTurn = false;
+        }
+    }
 
 	// reloads the scene
 	private void Restart() {
@@ -160,10 +282,17 @@ public class Player : MovingObject {
 			SoundManager.instance.PlaySingle(gameOverSound);
 			SoundManager.instance.musicSource.Stop();
 			GameManager.instance.GameOver();
+            food = 100;
+            ammunition = 0;
+            pistolUses = 0;
+            shotgunUses = 0;
 		}
 	}
 
-	private void OnDisable() {
+	public void OnDisable() {
 		GameManager.instance.playerFoodPoints = food;
+        GameManager.instance.playerAmmo = ammunition;
+        GameManager.instance.playerPistol = pistolUses;
+        GameManager.instance.playerShotgun = shotgunUses;
 	}
 }

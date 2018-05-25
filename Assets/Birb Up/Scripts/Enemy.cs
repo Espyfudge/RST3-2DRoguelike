@@ -7,6 +7,7 @@ public class Enemy : MovingObject {
 	public int playerDamage;
 	public AudioClip enemyAttack1;
 	public AudioClip enemyAttack2;
+    public int hp;
 
 	private Animator animator;
 	private Transform target;
@@ -17,10 +18,17 @@ public class Enemy : MovingObject {
 		GameManager.instance.AddEnemyToList(this);
 		animator = GetComponent<Animator>();
 		target = GameObject.FindGameObjectWithTag("Player").transform;
+        if (gameObject.name.Contains("Enemy1"))
+            hp = 2;
+        if (gameObject.name.Contains("Enemy2"))
+            hp = 3;
 		base.Start();
 	}
 
-
+    public void quickRemove()
+    {
+        GameManager.instance.RemoveEnemyFromList(this);
+    }
 
 	//*** ENEMY MOVEMENT ***//
 
@@ -70,4 +78,5 @@ public class Enemy : MovingObject {
 
 		hitPlayer.LoseFood(playerDamage);
 	}
+
 }
