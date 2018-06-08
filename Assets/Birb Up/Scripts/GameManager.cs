@@ -14,16 +14,15 @@ public class GameManager : MonoBehaviour {
     public int playerPistol = 0;
     public int playerShotgun = 0;
     [HideInInspector] public bool playersTurn = true;
-
+    public bool doingSetup = true;
+    
     private Text levelText;
     private Text restartText;
     private GameObject levelImage;
     private BoardManager boardScript;
-    private int level = 1;
+    [HideInInspector] public int level = 1;
     private List<Enemy> enemies;
     private bool enemiesMoving;
-    public bool doingSetup = true;
-
 
 
     //*** GAME SETUP ***//
@@ -45,6 +44,8 @@ public class GameManager : MonoBehaviour {
         enemies = new List<Enemy>();
         boardScript = GetComponent<BoardManager>();
         InitGame();
+
+        
     }
 
     // makes sure scene is only loaded once
@@ -57,6 +58,7 @@ public class GameManager : MonoBehaviour {
     static private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
         instance.level++;
         instance.InitGame();
+        Analytics.instance.InitAnalytics();
     }
 
     // initalises game, including the introductory "day #" message, and running the function to set up a new board

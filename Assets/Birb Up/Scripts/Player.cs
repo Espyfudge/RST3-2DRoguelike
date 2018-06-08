@@ -34,9 +34,12 @@ public class Player : MovingObject {
     private int facing = 1;
     private SpriteRenderer sr;
     private int blockLayer;
+    
 
 	// Use this for initialization
 	protected override void Start () {
+
+        
 		animator = GetComponent<Animator>();
         sr = GetComponent<SpriteRenderer>();
 		food = GameManager.instance.playerFoodPoints;
@@ -56,12 +59,13 @@ public class Player : MovingObject {
 
 
 
-	//*** MOVEMENT ***//
+    //*** MOVEMENT ***//
 
 
 
-	// Update is called once per frame
-	void Update () {
+    // Update is called once per frame
+    void Update() {
+
         Debug.Log(GameManager.instance.playersTurn);
 		//checks if itś the player's turn
 		if (!GameManager.instance.playersTurn) return;
@@ -188,12 +192,13 @@ public class Player : MovingObject {
             ammunition += 3;
             ammoText.text = "+3 Bullets: " + ammunition;
             //SoundManager.instance.RandomizeSfx(ammoSound1, ammoSound2);
+            Analytics.instance.ammo++;
             other.gameObject.SetActive(false);
         }
 
         if ( (other.tag == "Weapon") && (other.name.Contains("Pistol")) ) 
         {
-            
+            Analytics.instance.pistol++;
             pistolUses += 5;
             pistolText.text = "[1]\n+5 Pistol: " + pistolUses;
             other.gameObject.SetActive(false);
@@ -201,6 +206,7 @@ public class Player : MovingObject {
 
         if ( (other.tag == "Weapon") && (other.name.Contains("Shotgun")) )
         {
+            Analytics.instance.shotgun++;
             shotgunUses += 5;
             shotgunText.text = "[2]\n+5 Shotgun: " + shotgunUses;
             other.gameObject.SetActive(false);
@@ -211,6 +217,7 @@ public class Player : MovingObject {
     {
         if ( (Input.GetKeyDown(pistol)) && (ammunition > 0) && (pistolUses > 0))
         {
+            Analytics.instance.pused++;
             animator.SetTrigger("playerShoot1");
             ammunition--;
             pistolUses--;
@@ -227,6 +234,10 @@ public class Player : MovingObject {
                     hit.transform.GetComponent<Enemy>().hp--;
                     if (hit.transform.GetComponent<Enemy>().hp <= 0 )
                     {
+                        if (hit.transform.gameObject.name.Contains("Enemy1"))
+                            Analytics.instance.en1++;
+                        if (hit.transform.gameObject.name.Contains("Enemy2"))
+                            Analytics.instance.en2++;
                         hit.transform.GetComponent<Enemy>().quickRemove();
                         hit.transform.gameObject.SetActive(false);
                     }
@@ -238,6 +249,7 @@ public class Player : MovingObject {
 
         if ((Input.GetKeyDown(shotgun)) && (ammunition > 1) && (shotgunUses > 0))
         {
+            Analytics.instance.sused++;
             animator.SetTrigger("playerShoot2");
             ammunition -= 2;
             shotgunUses--;
@@ -254,6 +266,10 @@ public class Player : MovingObject {
                     hit.transform.GetComponent<Enemy>().hp -= 2;
                     if (hit.transform.GetComponent<Enemy>().hp <= 0)
                     {
+                        if (hit.transform.gameObject.name.Contains("Enemy1"))
+                            Analytics.instance.en1++;
+                        if (hit.transform.gameObject.name.Contains("Enemy2"))
+                            Analytics.instance.en2++;
                         hit.transform.GetComponent<Enemy>().quickRemove();
                         hit.transform.gameObject.SetActive(false);
                     }
